@@ -3,7 +3,7 @@ import React from 'react';
 // Constantes de configuración de AWS Cognito y API Gateway
 const COGNITO_DOMAIN = 'us-east-1ehrdobgi5.auth.us-east-1.amazoncognito.com';
 const COGNITO_CLIENT_ID = '5f5au2pifdhpl45ujoeac09nd9';
-const COGNITO_REDIRECT_URI = 'http://localhost:3000';
+const COGNITO_REDIRECT_URI = 'https://main.d2ax6decp23hvd.amplifyapp.com/';
 const API_GATEWAY_URL = 'https://io1hs36q95.execute-api.us-east-1.amazonaws.com/dev';
 
 /**
