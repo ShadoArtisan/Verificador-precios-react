@@ -19,18 +19,12 @@ function App() {
         const hash = window.location.hash.substring(1);
         const params = new URLSearchParams(hash);
         
-        // <-- CAMBIO: Ahora 'idToken' es la variable principal que buscamos.
         const idToken = params.get('id_token');
 
-        // Si encontramos un idToken en la URL (después del login)
         if (idToken) {
-            // <-- CAMBIO: El estado principal 'token' ahora es el idToken.
             setToken(idToken);
-            
-            // <-- CAMBIO: Guardamos el idToken en localStorage para persistir la sesión.
             localStorage.setItem('userIdToken', idToken);
 
-            // Decodificamos el idToken para obtener el email del usuario.
             try {
                 const payload = JSON.parse(atob(idToken.split('.')[1]));
                 setUserEmail(payload.email);
@@ -39,12 +33,9 @@ function App() {
                 console.error("Error decodificando el id_token:", e);
             }
             
-            // Limpiamos la URL para no mostrar los tokens.
             window.history.replaceState({}, document.title, window.location.pathname);
 
-        // Si no hay token en la URL, buscamos en localStorage para ver si ya había una sesión.
         } else {
-            // <-- CAMBIO: Buscamos 'userIdToken' en lugar de 'userAccessToken'.
             const storedToken = localStorage.getItem('userIdToken');
             const storedEmail = localStorage.getItem('userEmail');
             if (storedToken) {
@@ -62,7 +53,6 @@ function App() {
     const handleLogout = () => {
         setToken(null);
         setUserEmail('');
-        // <-- CAMBIO: Removemos 'userIdToken' al cerrar sesión.
         localStorage.removeItem('userIdToken');
         localStorage.removeItem('userEmail');
         const cognitoLogoutUrl = `https://${COGNITO_DOMAIN}/logout?client_id=${COGNITO_CLIENT_ID}&logout_uri=${encodeURIComponent(COGNITO_REDIRECT_URI)}`;
@@ -72,7 +62,6 @@ function App() {
     return (
         <div className="bg-gray-900 text-white min-h-screen font-sans">
             {token ? (
-                // Pasamos el ID Token al Dashboard para que lo use en las llamadas a la API.
                 <Dashboard token={token} userEmail={userEmail} onLogout={handleLogout} />
             ) : (
                 <LoginScreen onLogin={handleLogin} />
@@ -81,10 +70,6 @@ function App() {
     );
 }
 
-
-// ===============================================================
-//  NO SE NECESITAN CAMBIOS EN LOS COMPONENTES DE ABAJO
-// ===============================================================
 
 /**
  * Pantalla que se muestra cuando el usuario no está autenticado.
@@ -122,8 +107,7 @@ function Dashboard({ token, userEmail, onLogout }) {
             const response = await fetch(`${API_GATEWAY_URL}/products`, {
                 method: 'GET',
                 headers: {
-                    // Ahora 'token' es el ID Token, que es lo correcto.
-                    'Authorization': `${token}` // El 'authorizer' de Cognito procesa esto correctamente.
+                    'Authorization': `${token}`
                 }
             });
             if (!response.ok) {
@@ -257,12 +241,13 @@ function Dashboard({ token, userEmail, onLogout }) {
     );
 }
 
+// --- ÚNICO CAMBIO REALIZADO AQUÍ ---
 function ProductCard({ product, onDelete }) {
     const getIndicatorColor = () => {
         const price = parseFloat(product.lastCheckedPrice);
         const threshold = parseFloat(product.threshold);
-        if (price < threshold) return 'bg-green-500';
-        if (price === threshold) return 'bg-blue-500';
+        if (price <= threshold) return 'bg-green-500';
+        if (price > threshold && product.lowestPriceRecorded && price <= product.lowestPriceRecorded) return 'bg-blue-500';
         return 'bg-yellow-500';
     };
     
@@ -279,6 +264,13 @@ function ProductCard({ product, onDelete }) {
                 </div>
                 <div className="mt-4 text-gray-400">
                     <p>Precio Actual: <span className="font-semibold text-white">${new Intl.NumberFormat('es-AR').format(product.lastCheckedPrice)}</span></p>
+                    
+                    {/* --- LÍNEA AÑADIDA --- */}
+                    {/* Solo muestra este campo si el dato existe en el producto */}
+                    {product.lowestPriceRecorded && (
+                        <p>Precio más bajo: <span className="font-semibold text-cyan-400">${new Intl.NumberFormat('es-AR').format(product.lowestPriceRecorded)}</span></p>
+                    )}
+                    
                     <p>Precio Deseado: <span className="font-semibold text-white">${new Intl.NumberFormat('es-AR').format(product.threshold)}</span></p>
                 </div>
             </div>
